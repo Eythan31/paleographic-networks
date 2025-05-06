@@ -107,7 +107,7 @@
       <x>580</x>
       <y>60</y>
       <width>341</width>
-      <height>163</height>
+      <height>191</height>
      </rect>
     </property>
     <layout class="QFormLayout" name="formLayout_2">
@@ -180,7 +180,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Threshold:</string>
+        <string>Edge threshold:</string>
        </property>
       </widget>
      </item>
@@ -196,7 +196,7 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="verticalOffsetLabel">
        <property name="font">
         <font>
@@ -208,7 +208,7 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="3" column="1">
       <widget class="QLineEdit" name="verticalOffsetLineEdit">
        <property name="font">
         <font>
@@ -221,39 +221,6 @@
       </widget>
      </item>
      <item row="4" column="0">
-      <widget class="QLabel" name="antiEdgesLabel">
-       <property name="font">
-        <font>
-         <pointsize>11</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Anti-edges:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QCheckBox" name="antiEdgesCheckBox">
-       <property name="font">
-        <font>
-         <pointsize>11</pointsize>
-        </font>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="horizontalOffsetLineEdit">
-       <property name="font">
-        <font>
-         <pointsize>11</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>0</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
       <widget class="QLabel" name="horizontalOffsetLabel">
        <property name="font">
         <font>
@@ -265,7 +232,43 @@
        </property>
       </widget>
      </item>
+     <item row="4" column="1">
+      <widget class="QLineEdit" name="horizontalOffsetLineEdit">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+     </item>
      <item row="5" column="0">
+      <widget class="QLabel" name="antiEdgesLabel">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Anti-edges:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QCheckBox" name="antiEdgesCheckBox">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="useImagesCheckBox"/>
+     </item>
+     <item row="6" column="0">
       <widget class="QLabel" name="useImagesLabel">
        <property name="font">
         <font>
@@ -277,8 +280,29 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
-      <widget class="QCheckBox" name="useImagesCheckBox"/>
+     <item row="2" column="0">
+      <widget class="QLabel" name="thresholdLabel_3">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Node threshold:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="node_thresholdLineEdit">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>

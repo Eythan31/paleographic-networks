@@ -12,55 +12,15 @@ import scipy
 import traceback
 from matplotlib.lines import Line2D
 import numpy as np
-#from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QDialog, QTableWidgetItem, QFileDialog
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
+#from PyQt5.QtCore import pyqtSlot
 
 ###############################################################################
 ########################## PARAMETERS #########################################
 ###############################################################################
-
-################################
-#CHOICE OF LETTERS AND FEATURES
-################################
-LETTERS_TO_KEEP = []
-#LETTERS_TO_KEEP = []
-LETTERS_TO_KEEP.append("א")
-LETTERS_TO_KEEP.append("ב")
-#LETTERS_TO_KEEP.append("ג")
-#LETTERS_TO_KEEP.append("ד")
-#LETTERS_TO_KEEP.append("ה")
-#LETTERS_TO_KEEP.append("ו")
-#LETTERS_TO_KEEP.append("ז")
-#LETTERS_TO_KEEP.append("ח")
-#LETTERS_TO_KEEP.append("ט")
-#LETTERS_TO_KEEP.append("י")
-#LETTERS_TO_KEEP.append("כ")
-LETTERS_TO_KEEP.append("ל")
-LETTERS_TO_KEEP.append("מ")
-#LETTERS_TO_KEEP.append("נ")
-#LETTERS_TO_KEEP.append("ס")
-#LETTERS_TO_KEEP.append("ע")
-#LETTERS_TO_KEEP.append("פ")
-#LETTERS_TO_KEEP.append("צ")
-#LETTERS_TO_KEEP.append("ק")
-#LETTERS_TO_KEEP.append("ר")
-#LETTERS_TO_KEEP.append("ש")
-#LETTERS_TO_KEEP.append("ת")
-
-BODY_PARTS_TO_KEEP = []
-#BODY_PARTS_TO_KEEP.append("body:inclination")
-BODY_PARTS_TO_KEEP.append("head")
-BODY_PARTS_TO_KEEP.append("head:shape")
-#BODY_PARTS_TO_KEEP.append("head:angle")#for gimmel and pe
-BODY_PARTS_TO_KEEP.append("foot:shape")#for lamed
-#BODY_PARTS_TO_KEEP.append("nose")
-
-
-EXCLUDED_FEATURES = ["מ:head:shape:curved fork", "א:head:u-shaped"] #features to be excluded from the analysis
-SINGLE_LETTER = (len(LETTERS_TO_KEEP)==1) #Set to True if comparing features of a single letter, to False otherwise (important for the layout of the nodes)
-SHOW_ANTI_EDGES = False #Show an edge only if the two features NEVER occur together (Default=False)
+SINGLE_LETTER = False #Set to True if comparing features of a single letter, to False otherwise (important for the layout of the nodes)
 
 ################################
 #INPUT FILES
@@ -75,12 +35,11 @@ CSV_DELIMITER = ","
 #OUTPUT PARAMETERS
 ################################
 TITLE = "Paleographic network"
-WITH_LEGEND = False #with or without legend at the bottom of the output graphs
+#WITH_LEGEND = True #with or without legend at the bottom of the output graphs (currently obsolete)
 OUTPUT_FILENAME_PREFIX = "TEST"#used for title of the plot and for name of directory
-#THRESHOLD = 3 #obsolete
+
 THRESHOLDS = [1, 3, 5, 7, 9]#generates networks for all these threshold values (these are thresholds on the weight of the edge). If an edge has weight strictly less than the threshold, the edge is removed from the graph.
 NODE_THRESHOLD = 0 #Threshold for nodes: if a node has strictly less attestations than this threshold, it is removed from the graph#NOT YET IMPLEMENTED
-#FILENAME = "data/comparison-head-alef-bet-mem.csv"
 VERBOSE = False
 
 OUTPUT_GRAPH_FILENAME = "output"
@@ -90,7 +49,6 @@ DRAW_TABLE = False
 ALL_COLORS = ['pink', 'blue', 'red', 'grey', 'green', 'orange',  'brown', 
               'black', 'black', 'black', 'black', 'black','black','black',
               'black', 'black', 'black', 'black', 'black','black','black']
-SHOW_ADDITIONAL_FEATURES = False#Obsolete
 
 MAX_NODE_SIZE = 400 #500
 MIN_NODE_SIZE = 30
@@ -108,10 +66,7 @@ RIGHTMOST_VERTEX_LABELS_OFFSET = 0.55
 NODE_LABELS_VERTICAL_OFFSET = 0.19 #vertical offset for node labels
 MULTIPARTITE_LAYOUT_SCALE = 1
 NODES_Y_FACTOR = 2.8#1.5 #multiplicative factor for the y coordinate of all vertices
-LAYOUT = "multipartite" #Possible values: "circular", "multipartite", "kamada_kawai", "planar", "random", "spectral", "spring", "shell".
 
-#DRAW_WITH_IMAGES = True # Image for graph nodes
-#DRAW_WITH_IMAGES = False
 icons = {
     "א:head:shape:parallel": "images/aleph-head-parallel.png",
     "א:head:shape:V-shaped":"images/aleph-head-triangular.png",
@@ -134,9 +89,10 @@ icons = {
     "מ:head:shape:crossed parallels": "images/mem-crossed-parallel-head.png", 
     "מ:head:shape:square": "images/mem-square-fork-head.png", 
     "מ:head:shape:zigzag":"images/mem-zigzag-head.png", 
-    "מ:head:shape:uncrossed parallels":"images/mem-uncrossed-parallel-head.png"  
+    "מ:head:shape:uncrossed parallels" : "images/mem-uncrossed-parallel-head.png",
+    "מ:head:shape:curved fork" : "images/mem-curved-fork-head.png" 
 }
-#icons = {}
+
 ########################################################################
 ########### CHANGE WORKING DIRECTORY TO SCRIPT DIRECTORY ###############
 ########### Necessary for notepad++ to find the right data files #######
@@ -451,25 +407,25 @@ def get_positions_right_side(features):
     return pos
 
 # "circular", "multipartite", "kamada_kawai", "planar", "random", "spectral", "spring", "shell"
-def get_layout_positions(G):
-    if LAYOUT == "circular":
+def get_layout_positions(G, layout):
+    if layout == "circular":
         pos = nx.circular_layout(G)
         for x in pos:
             pos[x][0] *= 1.5#expand points horizontally a bit. Magic number.
         return pos
-    elif LAYOUT == "kamada_kawai":
+    elif layout == "kamada_kawai":
         return nx.kamada_kawai_layout(G)
-    elif LAYOUT == "planar":
+    elif layout == "planar":
         return nx.planar_layout(G)    
-    elif LAYOUT == "random":
+    elif layout == "random":
         return nx.random_layout(G)    
-    elif LAYOUT == "spectral":
+    elif layout == "spectral":
         return nx.spectral_layout(G)    
-    elif LAYOUT == "spring":
+    elif layout == "spring":
         return nx.spring_layout(G)  
-    elif LAYOUT == "shell":        
+    elif layout == "shell":        
         return nx.shell_layout(G)
-    elif LAYOUT == "multipartite":        
+    elif layout == "multipartite":        
         pos = nx.multipartite_layout(G, subset_key="layer", scale=MULTIPARTITE_LAYOUT_SCALE)
         #move leftmost points more to the left and rightmost points more to the right
         points = pos.values()
@@ -720,25 +676,20 @@ def save_image_to_file(threshold, dir_name, show_edges):
     #os.makedirs(os.path.dirname(filename), exist_ok=True)
     plt.savefig(filename, dpi=300, bbox_inches="tight", pad_inches=0.3)
         
-def add_legend():
-    size=12
-    # legend_elements = [
-    # Line2D([0], [0], marker='o', color='w', label='Aleph',markerfacecolor='g', markersize=size),
-    # Line2D([0], [0], marker='o', color='w', label='Mem',markerfacecolor='r', markersize=size),        
-    # Line2D([0], [0], marker='o', color='w', label='Beth',markerfacecolor='b', markersize=size),        
-    # ]
-    legend_elements = []
-    if len(LETTERS_TO_KEEP) >1 :
-        for i in range(0, len(LETTERS_TO_KEEP)):
-            letter = LETTERS_TO_KEEP[i]
-            color = ALL_COLORS[i]
-            legend_elements.append(Line2D([0], [0], marker='o', color="w", label=letter,markerfacecolor=color, markersize=size))    
-    else:
-        for i in range(0, len(BODY_PARTS_TO_KEEP)):
-            part = BODY_PARTS_TO_KEEP[i]
-            color = ALL_COLORS[i]
-            legend_elements.append(Line2D([0], [0], marker='o', color="w", label=part,markerfacecolor=color, markersize=size))            
-    plt.legend(handles=legend_elements, loc='lower right')
+# def add_legend():
+    # size=12
+    # legend_elements = []
+    # if len(LETTERS_TO_KEEP) > 1 :
+        # for i in range(0, len(LETTERS_TO_KEEP)):
+            # letter = LETTERS_TO_KEEP[i]
+            # color = ALL_COLORS[i]
+            # legend_elements.append(Line2D([0], [0], marker='o', color="w", label=letter,markerfacecolor=color, markersize=size))    
+    # else:
+        # for i in range(0, len(BODY_PARTS_TO_KEEP)):
+            # part = BODY_PARTS_TO_KEEP[i]
+            # color = ALL_COLORS[i]
+            # legend_elements.append(Line2D([0], [0], marker='o', color="w", label=part,markerfacecolor=color, markersize=size))            
+    # plt.legend(handles=legend_elements, loc='lower right')
     
 def multiply_pos_y(pos, factor):
     for key in pos:
@@ -829,49 +780,46 @@ def filter_included_features_from_list(l, included_features):
 #the order of appearance of the nodes in the network (layers) by choosing the
 #order in LETTERS_TO_KEEP and of BODY_PARTS_TO_KEEP. 
 #Returns the sortes version of the list of nodes
-def sort_nodes(nodes):
-    sorted_nodes = []
-    #if many letters, sort by letter
-    if not SINGLE_LETTER:
-        for letter in LETTERS_TO_KEEP:
-            for node in nodes:
-                if node[0] == letter:
-                    sorted_nodes.append(node)
-    else: #else sort by body parts
-        for body_part_to_keep in BODY_PARTS_TO_KEEP:
-            for node in nodes:
-                body_part = get_full_body_part(node)
-                if get_full_body_part(node) == body_part_to_keep:
-                    sorted_nodes.append(node)
-    return sorted_nodes
+# def sort_nodes(nodes):
+    # sorted_nodes = []
+    # #if many letters, sort by letter
+    # if not SINGLE_LETTER:
+        # for letter in LETTERS_TO_KEEP:
+            # for node in nodes:
+                # if node[0] == letter:
+                    # sorted_nodes.append(node)
+    # else: #else sort by body parts
+        # for body_part_to_keep in BODY_PARTS_TO_KEEP:
+            # for node in nodes:
+                # body_part = get_full_body_part(node)
+                # if get_full_body_part(node) == body_part_to_keep:
+                    # sorted_nodes.append(node)
+    # return sorted_nodes
     
 
 # if not SHOW_ADDITIONAL_FEATURES:
 #     BODY_PARTS_TO_EXCLUDE.append("additional")
+
 def make_output_directory():
     now = datetime.datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")##   
     filename = "outputs/"                       
-    filename += OUTPUT_FILENAME_PREFIX + "_"+now 
-    #filename += "_with_threshold" if THRESHOLD>1 else "_no_threshold"
+    filename += OUTPUT_FILENAME_PREFIX + "_"+now     
     filename += "/"
     os.makedirs(os.path.dirname(filename), exist_ok=True)    
     return filename
 
 
-def build_graph(d, d2, show_edges, threshold):
-    nodes = get_all_full_feature_names(d2)
-    #print("In build_graph(). Nodes 1 = ", nodes)
-    #nodes = sort_nodes(nodes)
-    #print("In build_graph(). Nodes 2 = ", nodes)
+def build_graph(nodes, d, d2, show_edges, edge_threshold, show_anti_edges):
+    #nodes = get_all_full_feature_names(d2)
     occurrences = get_occurrences(d)        
     feature_count = get_feature_count(d)    
-    
+    print("feature count: ", feature_count)
     G = nx.Graph() 
     add_nodes(G, d2, nodes)           
 
     if show_edges:
-        if not SHOW_ANTI_EDGES:
-            add_edges_to_graph(G, nodes, occurrences, threshold)
+        if not show_anti_edges:
+            add_edges_to_graph(G, nodes, occurrences, edge_threshold)
         else:
             add_anti_edges(G, nodes, occurrences)
     return G
@@ -889,24 +837,32 @@ def draw_vertex_labels(G, nodes, pos, node_sizes, feature_count):
     vertex_labels = get_vertex_labels(nodes, feature_count)
     nx.draw_networkx_labels(G, pos=pos_labels, labels=vertex_labels, font_size=8, horizontalalignment="left")
     
-def draw_network(d, d2, threshold, dir_name, vertical_offset=0, horizontal_offset=0, show_edges=True, with_images = False):
-    #print("In draw_network()")
-    nodes = get_all_full_feature_names(d2)    
+def draw_network(d, d2, edge_threshold, vertex_threshold, dir_name, vertical_offset=0, horizontal_offset=0, show_edges=True, with_images = False, show_anti_edges = False, layout="multipartite"):
+    nodes = get_all_full_feature_names(d2)   
+        
     occurrences = get_occurrences(d)    
     feature_count = get_feature_count(d)        
     max_feature_count = max(feature_count.values())
     
-    G = build_graph(d, d2, show_edges, threshold)
+    #remove nodes (i.e., features) that have less than "vertex_threshold" attestations
+    print("nodes before application of vertex threshold: ", nodes)
+    nodes = [node for node in nodes if feature_count[node] >= vertex_threshold]
+    print("nodes after application of vertex threshold: ", nodes)
+    #for node in nodes:
+    #    if feature_count[node] < vertex_threshold:
+            #print("removing vertex ", node)
+    
+    G = build_graph(nodes, d, d2, show_edges, edge_threshold, show_anti_edges)
     if VERBOSE:
         print("\nGraph nodes 1=",G.nodes())
     
-    pos = get_layout_positions(G)
+    pos = get_layout_positions(G, layout)
     multiply_pos_y(pos, NODES_Y_FACTOR)
     edge_labels = nx.get_edge_attributes(G,'weight')  
-    widths = get_edge_widths(G, edge_labels) if not SHOW_ANTI_EDGES else 1        
+    widths = get_edge_widths(G, edge_labels) if not show_anti_edges else 1        
     node_color = get_node_colors_from_nodes(nodes)     
-    edge_color = 'grey' if not SHOW_ANTI_EDGES else 'red'    
-    node_sizes = [ MIN_NODE_SIZE+ math.floor(feature_count[feature]/max_feature_count*MAX_NODE_SIZE) for feature in nodes]        
+    edge_color = 'grey' if not show_anti_edges else 'red'    
+    node_sizes = [MIN_NODE_SIZE + math.floor(feature_count[feature]/max_feature_count*MAX_NODE_SIZE) for feature in nodes]        
     random_vertical_offset(pos, vertical_offset)
     random_horizontal_offset(pos, horizontal_offset)
 
@@ -941,7 +897,7 @@ def draw_network(d, d2, threshold, dir_name, vertical_offset=0, horizontal_offse
         )
     
     #Draw edge labels
-    if not SHOW_ANTI_EDGES and edge_labels != {}: #if there are edges
+    if not show_anti_edges and edge_labels != {}: #if there are edges
         nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=edge_labels, font_size=6)
         
     # pos_labels = get_vertex_label_positions(nodes, pos, node_sizes)
@@ -962,7 +918,7 @@ def draw_network(d, d2, threshold, dir_name, vertical_offset=0, horizontal_offse
         print("\nWidths=", widths, "len(Widths)=", len(widths))
         print("\nVertex labels: ", vertex_labels)
         
-    draw_title(show_edges, threshold)    
+    draw_title(show_edges, edge_threshold)    
     if DRAW_TABLE:
         draw_table(nodes, edge_labels) 
 
@@ -991,112 +947,13 @@ def draw_network(d, d2, threshold, dir_name, vertical_offset=0, horizontal_offse
             a.axis("off")
             i=i+1
     
-    if WITH_LEGEND:
-        plt.legend(title='Legend:')#removing legend for now (has to be updated to get the right letters and colors)
-        add_legend()   
-    save_image_to_file(threshold, dir_name, show_edges)
-
-    plt.show()
-    
-
-
-def draw_network_with_images(d, d2, threshold, dir_name, show_edges=True):           
-    nodes = get_all_full_feature_names(d2)      
-    nodes = sort_nodes(nodes)        
-    occurrences = get_occurrences(d)        
-    feature_count = get_feature_count(d)    
-    max_feature_count = max(feature_count.values()) 
-
-    if VERBOSE:
-        print("\nNODES=", nodes, "; length =", len(nodes))
-        print("\nNODES SORTED=", nodes, "; length =", len(nodes))       
-        print("\nOccurrences = ", occurrences)
-        print("\nFEATURE COUNT: ", feature_count)
-        print("\n max feature count: ", max_feature_count)
+#    if WITH_LEGEND:
+#        plt.legend(title='Legend:')#removing legend for now (has to be updated to get the right letters and colors)
+#        add_legend()   
         
-    G = build_graph(d, d2, show_edges, threshold)
-    if VERBOSE:
-        print("\nGraph nodes 1=",G.nodes())
-        
-    pos = get_layout_positions(G)
-    multiply_pos_y(pos, NODES_Y_FACTOR)       
-    edge_labels = nx.get_edge_attributes(G,'weight')    
-    widths = get_edge_widths(G, edge_labels)    
-    node_color = get_node_colors_from_nodes(nodes)#get_node_colors(d2)
-    edge_color = 'grey' if not SHOW_ANTI_EDGES else 'red'  
-    node_sizes = [ MIN_NODE_SIZE+ math.floor(feature_count[feature]/max_feature_count*MAX_NODE_SIZE) for feature in nodes]
-          
-    if VERBOSE:
-        print("\nNode sizes: ", node_sizes, "len(Node sizes): ", len(node_sizes))
-        print("\nEdge labels=", edge_labels, "\len(edge labels) = ", len(edge_labels))
-        print("\nWidths=", widths, "len(Widths)=", len(widths))
-        print("\nNODE COLORS=", node_color, "; length =", len(node_color))
-        print("\nNode sizes: ", node_sizes, "len(Node sizes): ", len(node_sizes))
-    
-    #Initialize figure
-    fig = plt.figure()    
-    ax = plt.gca() #new    
-    ax.set_xlim(LEFT_LIMIT, RIGHT_LIMIT) 
-    ax.set_ylim(LOWER_LIMIT,UPPER_LIMIT)#to avoid labels being cut    
-    plt.margins(x=PLOT_X_MARGIN)#to avoid labels being cut
-    
-    #Draw edges (with gap in edges for the images)  
-    nx.draw_networkx_edges(  
-        G, pos=pos, 
-        edge_color=edge_color, 
-        ax=ax, 
-        width=widths,
-        arrows=True, 
-        arrowstyle="-", 
-        min_source_margin=20, 
-        min_target_margin=20,
-    )
-    
-    #Draw edge labels
-    if not SHOW_ANTI_EDGES and edge_labels != {}: #if there are edges
-        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=edge_labels, font_size=6)        
+    save_image_to_file(edge_threshold, dir_name, show_edges)
 
-    draw_vertex_labels(G, nodes, pos, node_sizes, feature_count)
-    draw_title(show_edges, threshold)
-        
-    if DRAW_TABLE:
-        draw_table(nodes, edge_labels) 
-
-
-    ############TEST for including images ##############
-    # Transform from data coordinates (scaled between xlim and ylim) to display coordinates
-    tr_figure = ax.transData.transform
-    # Transform from display to figure coordinates
-    tr_axes = fig.transFigure.inverted().transform
-
-    # Select the size of the image (relative to the X axis)
-    #icon_size = (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.025
-    icon_size = (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.015
-    #print("icon size: ", icon_size)
-    icon_center = icon_size / 2.0
-
-    i=0
-    for n in G.nodes:
-       xf, yf = tr_figure(pos[n])
-       xa, ya = tr_axes((xf, yf))
-       
-       # get overlapped axes and plot icon        
-       #a = plt.axes([xa - icon_center, ya - icon_center, icon_size, icon_size])
-       if "image" in G.nodes[n]:
-           #a = plt.axes([xa - node_sizes[i]/10000, ya - node_sizes[i]/10000, node_sizes[i]/5000, node_sizes[i]/5000])
-           a = plt.axes([xa - icon_center, ya - icon_center, icon_size, icon_size])
-           a.imshow(G.nodes[n]["image"])
-       a.axis("off")
-       i=i+1
-    ##################################################
-    
-    if WITH_LEGEND:
-        plt.legend(title='Legend:')#removing legend for now (has to be updated to get the right letters and colors)
-        add_legend()   
-   
-    save_image_to_file(threshold, dir_name, show_edges)
-    plt.show()
-    
+    plt.show()    
 
 #####################################    
 ################ GUI ################    
@@ -1254,9 +1111,11 @@ class Window1(QMainWindow):
     def clickedShowButton(self):
         try:
             #print("selected features: ", all_selected_features)
-            global LAYOUT
-            LAYOUT = str(self.layoutComboBox_2.currentText())
-            threshold = int(self.thresholdLineEdit.text())
+            #global LAYOUT
+            #LAYOUT = str(self.layoutComboBox_2.currentText())
+            layout = str(self.layoutComboBox_2.currentText())
+            edge_threshold = int(self.thresholdLineEdit.text())
+            vertex_threshold = int(self.node_thresholdLineEdit.text()) #Minimum number of attestations of a feature
             vertical_offset = float(self.verticalOffsetLineEdit.text())
             horizontal_offset = float(self.horizontalOffsetLineEdit.text())                  
             ll = filter_included_features_from_list(l, all_selected_features)
@@ -1265,52 +1124,17 @@ class Window1(QMainWindow):
             #print_dictionary(d)
             #print()
             #print_dictionary(d2)
-            dir_name = make_output_directory()
-            global SHOW_ANTI_EDGES
-            SHOW_ANTI_EDGES = self.antiEdgesCheckBox.isChecked()            
-            DRAW_WITH_IMAGES = self.useImagesCheckBox.isChecked()
-            draw_network(d, d2, threshold, dir_name, vertical_offset, horizontal_offset, show_edges=True, with_images=DRAW_WITH_IMAGES)
+            dir_name = make_output_directory()            
+            show_anti_edges = self.antiEdgesCheckBox.isChecked()            
+            with_images = self.useImagesCheckBox.isChecked()
+            draw_network(d, d2, edge_threshold, vertex_threshold, dir_name, vertical_offset, horizontal_offset, show_edges=True, with_images=with_images, show_anti_edges=show_anti_edges, layout=layout)
             
         except Exception as e:
             print("Exception: ", e)   
-            print(traceback.format_exc())            
-        
-#####################################
-########### MAIN function ###########
-#####################################
-def main():
-    l = read_csv_to_list(INPUT_FILENAME)
-    #l = remove_body_types_from_list(l, BODY_PARTS_TO_EXCLUDE)
-    l = filter_body_parts_from_list(l, BODY_PARTS_TO_KEEP)
-    l = filter_letters_from_list(l, LETTERS_TO_KEEP)
-    l = filter_excluded_features_from_list(l, EXCLUDED_FEATURES)
-    # print("List read from CSV", l)   
-    d  = build_features_per_ID_dictionary(l) #dictionary of features per inscription (or per graph). Ex: {1007 :["א:head:parallel"]}
-    d2 = build_features_per_body_part_dictionary(l)#Ex: {"א:head" : ["parallel"]}  
-    dir_name = make_output_directory()
-    
-    if not DRAW_WITH_IMAGES:
-        draw_network(d, d2, 1, dir_name, show_edges=False)
-        for threshold in THRESHOLDS:
-            draw_network(d, d2, threshold, dir_name, show_edges=True)
-    else:    
-        #draw_network(d, d2, 7, dir_name, show_edges=True)#for testing purposes only. To be eventually removed from here.
-        draw_network_with_images(d, d2, 1, dir_name, show_edges=True)
-        #draw_network_with_images(d, d2, 7, dir_name, show_edges=True)
-        # draw_network(d, d2, 1) # drawing without threshold
-        # draw_network(d, d2, THRESHOLD) # drawing with threshold
-        #copy source file to output directory
-        shutil.copyfile('./'+SCRIPT_FILE, "./"+dir_name+SCRIPT_FILE)
-        print("...done.")
-        
-######################################
-#### OLD, non-GUI version#############
-######################################
-#main()
-######################################
+            print(traceback.format_exc())                         
 
 ######################################
-# New GUI version GUI
+# GUI version
 ######################################
 l = read_csv_to_list(INPUT_FILENAME)
 body_parts_dict = build_body_parts_per_letter_dictionary(l)
